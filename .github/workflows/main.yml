@@ -8,10 +8,36 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Eksekusi pull dan rebuild Docker
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cek Perubahan File
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
+      - name: Tarik Kode Terbaru
         run: |
           cd /home/motion/project/eunomia/Eunomia
           git pull origin main
-          docker compose down
-          docker compose build
-          docker compose up -d
+
+      - name: Build & Deploy Backend
+        if: steps.filter.outputs.backend == 'true'
+        run: |
+          cd /home/motion/project/eunomia/Eunomia
+          docker compose build backend
+          docker compose up -d backend
+
+      - name: Build & Deploy Frontend
+        if: steps.filter.outputs.frontend == 'true'
+        run: |
+          cd /home/motion/project/eunomia/Eunomia
+          docker compose build frontend
+          docker compose up -d frontend
